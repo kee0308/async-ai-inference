@@ -2,7 +2,15 @@
 
 ## Overview
 
-This project implements an asynchronous machine learning inference system using Apache Airflow, Amazon S3, Amazon SQS, Docker, and Kubernetes. The system trains a model, generates inference jobs, processes them asynchronously, and stores predictions in S3.
+This project implements an asynchronous machine learning inference system using:
+
+- **Apache Airflow** (orchestration)
+- **Amazon S3** (storage)
+- **Amazon SQS** (queue)
+- **Docker** (containerized compute)
+- **Kubernetes** (deployment & scaling)
+
+The system trains a model, generates inference jobs, processes them asynchronously, and stores predictions in S3.
 
 ---
 
@@ -29,7 +37,7 @@ S3 prediction JSON files
 ### 1. Clone Repo
 
 ```bash
-git clone https://github.com/your-username/async-ai-inference
+git clone https://github.com/kee0308/async-ai-inference
 cd async-ai-inference
 ```
 
@@ -46,6 +54,7 @@ pip install -r requirements.txt
 ```bash
 export AIRFLOW_HOME=~/airflow
 export AIRFLOW__CORE__LOAD_EXAMPLES=False
+
 export AWS_REGION=us-east-1
 export S3_BUCKET=async-ai-inference
 export SQS_QUEUE_NAME=async-ai-inference-queue
@@ -101,6 +110,7 @@ airflow dags trigger train_breast_cancer_model
 ```
 
 This DAG:
+
 - Loads the breast cancer dataset
 - Splits into train/test sets
 - Trains a Logistic Regression model
@@ -136,13 +146,13 @@ python consumer/app.py
 
 ### 4. Run Consumer with Docker
 
-Build the Docker image:
+Build image:
 
 ```bash
 docker build -t async-ai-consumer .
 ```
 
-Run the container:
+Run container:
 
 ```bash
 docker run \
@@ -163,7 +173,7 @@ Predictions are stored in:
 s3://async-ai-inference/final-project/predictions/
 ```
 
-Example prediction file:
+Example:
 
 ```json
 {
@@ -179,7 +189,7 @@ Example prediction file:
 
 Deployment file: `k8s/deployment.yaml`
 
-Apply the deployment:
+Apply deployment:
 
 ```bash
 kubectl apply -f k8s/deployment.yaml
@@ -191,7 +201,7 @@ Scale consumers:
 kubectl scale deployment async-ai-consumer --replicas=3
 ```
 
-> **Note:** A Kubernetes cluster was not available in the Cloud9 environment. The deployment YAML demonstrates how the system would scale in production.
+> **Note:** A Kubernetes cluster was not available in the Cloud9 environment. This configuration demonstrates how the system would scale in production.
 
 ---
 
@@ -205,17 +215,21 @@ kubectl scale deployment async-ai-consumer --replicas=3
 
 ### What happens if a consumer crashes?
 
-- The message is not deleted from the queue
-- The message becomes visible again after the visibility timeout
-- Another consumer picks it up and retries processing
+- Message is not deleted
+- Becomes visible again after timeout
+- Another consumer retries processing
 
-### Bottlenecks
+---
+
+## Bottlenecks
 
 - SQS polling latency
 - Model loading time per worker
-- Single consumer throughput ceiling
+- Single consumer throughput
 
-### Potential Improvements
+---
+
+## Potential Improvements
 
 - Kubernetes autoscaling (HPA)
 - Batch inference support
