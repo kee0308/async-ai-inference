@@ -2,13 +2,15 @@
 
 ## Overview
 
+The system trains a machine learning model, generates inference jobs, processes them asynchronously using a queue-based architecture, and stores predictions in S3.
+
 This project implements an asynchronous machine learning inference system using:
 
-- **Apache Airflow** (orchestration)
-- **Amazon S3** (storage)
-- **Amazon SQS** (queue)
-- **Docker** (containerized compute)
-- **Kubernetes** (deployment & scaling)
+- **Apache Airflow** — orchestration
+- **Amazon S3** — storage
+- **Amazon SQS** — queue
+- **Docker** — containerized compute
+- **Kubernetes** — deployment & scaling
 
 The system trains a model, generates inference jobs, processes them asynchronously, and stores predictions in S3.
 
@@ -16,7 +18,7 @@ The system trains a model, generates inference jobs, processes them asynchronous
 
 ## System Architecture
 
-```text
+```
 Airflow Training DAG
         ↓
 S3: model.pkl and test_data.json
@@ -25,7 +27,7 @@ Airflow Queue DAG
         ↓
 SQS inference messages
         ↓
-Docker Consumer
+Docker / Kubernetes Consumer
         ↓
 S3 prediction JSON files
 ```
@@ -89,15 +91,19 @@ cp dags/populate_queue_dag.py ~/airflow/dags/
 
 ### 6. Start Airflow
 
-**Terminal 1:**
 ```bash
-airflow scheduler
+airflow standalone
 ```
 
-**Terminal 2 (UI, optional):**
+### Optional Setup Script
+
+A helper script (`setup_airflow.sh`) is included to initialize the Airflow environment.
+
 ```bash
-airflow webserver --port 8080
+source setup_airflow.sh
 ```
+
+This sets environment variables and prepares the Airflow environment locally.
 
 ---
 
@@ -173,7 +179,7 @@ Predictions are stored in:
 s3://async-ai-inference/final-project/predictions/
 ```
 
-Example:
+Example prediction file:
 
 ```json
 {
@@ -200,6 +206,8 @@ Scale consumers:
 ```bash
 kubectl scale deployment async-ai-consumer --replicas=3
 ```
+
+This increases the number of consumer pods, enabling parallel processing of SQS messages.
 
 > **Note:** A Kubernetes cluster was not available in the Cloud9 environment. This configuration demonstrates how the system would scale in production.
 
@@ -229,30 +237,41 @@ kubectl scale deployment async-ai-consumer --replicas=3
 
 ## Design Decisions
 
-### Why use SQS?
+## Why Use SQS?
 
-- Decouples producers and consumers
-- Handles traffic spikes gracefully
-- Enables retries and fault tolerance
+- **Decouples producers and consumers** — each component operates independently
+- **Handles traffic spikes gracefully** — messages queue up without dropping requests
+- **Enables retries and fault tolerance** — failed messages become visible again automatically
+- **Supports asynchronous processing** — enables scalable, non-blocking inference workflows
 
-### What happens if a consumer crashes?
+---
 
-- Message is not deleted
-- Becomes visible again after timeout
-- Another consumer retries processing
+## What Happens If a Consumer Crashes?
+
+- The message is **not deleted** from the queue
+- It becomes **visible again** after the visibility timeout expires
+- **Another consumer** picks it up and retries processing
+
+This ensures no inference job is silently lost due to worker failure.
 
 ---
 
 ## Bottlenecks
 
-- SQS polling latency
-- Model loading time per worker
-- Single consumer throughput
+- **SQS polling latency** — slight delay between message arrival and consumer pickup
+- **Model loading time per worker** — loading `model.pkl` on each startup adds overhead
+- **Single consumer throughput** — one worker can only process so many messages in parallel
 
 ---
 
 ## Potential Improvements
 
-- Kubernetes autoscaling (HPA)
-- Batch inference support
-- Monitoring and logging pipeline
+- **Kubernetes autoscaling (HPA)** — automatically scale consumer pods based on queue depth
+- **Batch inference support** — process multiple records per SQS message to improve throughput
+- **Monitoring and logging pipeline** — add observability via CloudWatch, Prometheus, or Grafana
+
+---
+
+## Conclusion
+
+This system demonstrates a scalable, asynchronous ML inference pipeline using modern MLOps tools. It highlights how orchestration, messaging, and distributed processing work together in production-grade systems.
