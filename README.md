@@ -205,6 +205,28 @@ kubectl scale deployment async-ai-consumer --replicas=3
 
 ---
 
+## Screenshots
+
+### Airflow Training DAG
+![Training DAG](screenshots/airflow_training_dag_success.png)
+
+### Airflow Queue DAG
+![Queue DAG](screenshots/airflow_queue_dag_success.png)
+
+### Consumer Logs
+![Consumer Logs](screenshots/consumer_processing_logs.png)
+
+### S3 Model & Test Data
+![S3 Model](screenshots/s3_model_and_test_data.png)
+
+### S3 Predictions
+![Predictions](screenshots/s3_predictions_output.png)
+
+### SQS Queue Metrics
+![SQS](screenshots/sqs_queue_messages.png)
+
+---
+
 ## Design Decisions
 
 ### Why use SQS?
